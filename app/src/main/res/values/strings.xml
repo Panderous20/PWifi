@@ -3,4 +3,15 @@
     <string name="app_description">Ptit Wifi-Monitoring Application</string>
     <string name="speed_test">Speed Test</string>
     <string name="wifi_list">Wi-Fi List</string>
+    <string name="ping">PING</string>
+    <string name="ping_value">%1$s ms</string>
+    <string name="jitter">JITTER</string>
+    <string name="jitter_value">%1$s ms</string>
+    <string name="megabit_per_second">Mbps</string>
+    <string name="download_upcase">DOWNLOAD</string>
+    <string name="upload_upcase">UPLOAD</string>
+    <string name="error">Error</string>
+    <string name="rssi_title">Real-Time Wi-fi Signal (RSSI)</string>
+    <string name="wifi_fail">Wi-Fi chưa được bật. Vui lòng bật Wi-Fi để quét mạng.</string>
+    <string name="location_fail">Ứng dụng chưa được cấp quyền truy cập vị trí. Vui lòng cấp quyền để tiếp tục quét Wi-Fi.</string>
 </resources>

@@ -6,9 +6,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
 import androidx.annotation.RequiresPermission
+import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
+import com.example.pwifi.R
+import com.example.pwifi.data.SimpleScanResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
@@ -16,14 +21,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-
-data class SimpleScanResult(
-    val ssid: String,
-    val bssid: String,
-    val level: Int,        // RSSI (dBm)
-    val frequency: Int,    // MHz
-    val capabilities: String
-)
 
 object WifiScanner {
 
@@ -98,10 +95,21 @@ object WifiScanner {
         val caps = "" // connectionInfo doesn't give capabilities; can be inferred from scanResults
         return SimpleScanResult(ssid, bssid, level, freq, caps)
     }
-    @SuppressLint("MissingPermission")
+
     suspend fun scanOnce(context: Context): List<SimpleScanResult> = withContext(Dispatchers.IO) {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
+        if (!wifiManager.isWifiEnabled) {
+            throw IllegalStateException(context.getString(R.string.wifi_fail))
+        }
+
+        val hasLocationPermission =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+        if (!hasLocationPermission) {
+            throw SecurityException(context.getString(R.string.location_fail))
+        }
         // Yêu cầu: user phải bật Wi-Fi và cấp quyền LOCATION
         val results = wifiManager.scanResults ?: emptyList()
 

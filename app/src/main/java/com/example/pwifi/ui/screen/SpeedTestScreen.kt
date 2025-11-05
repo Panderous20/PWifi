@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +22,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -41,11 +44,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.pwifi.R
+import com.example.pwifi.data.SpeedTestUiState
 import com.example.pwifi.network.NetworkSpeedTester
 import com.example.pwifi.ui.theme.PWifiTheme
 import kotlinx.coroutines.async
@@ -65,7 +71,7 @@ fun SpeedTestScreen(paddingValues: PaddingValues) {
     val uploadAnimation = remember { Animatable(0f) }
     var isTesting by remember { mutableStateOf(false) }
 
-    val state = UiState(
+    val state = SpeedTestUiState(
         ping = ping,
         jitter = jitter,
         downloadSpeed = downloadAnimation.value,
@@ -82,7 +88,7 @@ fun SpeedTestScreen(paddingValues: PaddingValues) {
             uploadAnimation.snapTo(0f)
 
             try {
-                val maxSpeed = 100f // Max speed để normalize (Mbps)
+                val maxSpeed = 500f // Max speed để normalize (Mbps)
 
                 // Launch test thực trong background
                 val testJob = async {
@@ -158,35 +164,39 @@ fun SpeedTestScreen(paddingValues: PaddingValues) {
         }
     }
 
-    SpeedTestScreen(state, ::startTest)
+    SpeedTestScreen(paddingValues ,state, ::startTest)
 }
 
 @Composable
 private fun SpeedTestScreen(
-    state: UiState,
+    paddingValues: PaddingValues,
+    state: SpeedTestUiState,
     onClick: () -> Unit,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = paddingValues.calculateBottomPadding())
     ) {
         Header()
         AdditionInfo(state.ping, state.jitter)
         Spacer(modifier = Modifier.height(36.dp))
         Column(
-            verticalArrangement = Arrangement.spacedBy(32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
             SpeedIndicator(
-                title = "DOWNLOAD",
+                title = stringResource(R.string.download_upcase),
                 speed = state.downloadSpeed,
                 color = Color(0xFFAE96D9)
             )
             SpeedIndicator(
-                title = "UPLOAD",
+                title = stringResource(R.string.upload_upcase),
                 speed = state.uploadSpeed,
                 color = Color(0xFF96D9AE)
             )
@@ -199,7 +209,7 @@ private fun SpeedTestScreen(
 fun Header() {
     Text(
         text = "SPEEDTEST",
-        modifier = Modifier.padding(bottom = 32.dp, top = 52.dp),
+        modifier = Modifier.padding(bottom = 32.dp, top = 32.dp),
         style = MaterialTheme.typography.headlineMedium
     )
 }
@@ -315,15 +325,18 @@ fun AdditionInfo(ping: String, jitter: String) {
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
     ) {
-        InfoColumn(title = "PING", value = "$ping ms")
+        InfoColumn(
+            title = stringResource(R.string.ping),
+            value = stringResource(R.string.ping_value, ping))
         VerticalDivider()
-        InfoColumn(title = "JITTER", value = "$jitter ms")
+        InfoColumn(title = stringResource(R.string.jitter),
+            value = stringResource(R.string.jitter_value, jitter))
     }
 }
 
 @Composable
 fun SpeedValue(title: String, value: Float) {
-    val formattedValue = String.format("%.2f", value * 100f)
+    val formattedValue = String.format("%.2f", value * 500f)
     Column(
         Modifier
             .fillMaxSize()
@@ -337,7 +350,7 @@ fun SpeedValue(title: String, value: Float) {
             fontSize = 36.sp,
             fontWeight = FontWeight.Bold
         )
-        Text(text = "Mbps", fontSize = 14.sp)
+        Text(text = stringResource(R.string.megabit_per_second), fontSize = 14.sp)
     }
 }
 
@@ -348,7 +361,7 @@ fun StartButton(
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = Modifier.padding(vertical = 24.dp),
+        modifier = Modifier.padding(top = 12.dp, bottom = 24.dp),
         enabled = isEnabled,
         shape = RoundedCornerShape(24.dp),
         border = BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.onSurface)
@@ -373,7 +386,8 @@ fun DefaultPreview() {
     PWifiTheme {
         Surface {
             SpeedTestScreen(
-                UiState(
+                paddingValues = PaddingValues(0.dp),
+                SpeedTestUiState(
                     ping = "32.4",
                     jitter = "5.3",
                     downloadSpeed = 0.75f,

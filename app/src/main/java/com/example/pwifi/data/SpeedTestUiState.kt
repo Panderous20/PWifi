@@ -1,6 +1,6 @@
-package com.example.pwifi.ui.screen
+package com.example.pwifi.data
 
-data class UiState(
+data class SpeedTestUiState(
     val ping: String = "-",
     val jitter: String = "-",
     val downloadSpeed: Float = 0f,
