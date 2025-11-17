@@ -74,6 +74,11 @@ object WifiScanner {
         }
     }
 
+    suspend fun startRssiMeasure(context: Context): Int {
+        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        return wifiManager.connectionInfo.rssi
+    }
+
     private fun toSimple(sr: ScanResult) = SimpleScanResult(
         ssid = sr.SSID ?: "",
         bssid = sr.BSSID ?: "",
@@ -85,14 +90,16 @@ object WifiScanner {
     /**
      * Get current connected WiFi info (may be empty if not connected)
      */
-    fun getCurrentConnectionInfo(context: Context): SimpleScanResult? {
+    suspend fun getCurrentConnectionInfo(context: Context): SimpleScanResult? {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val info = wifiManager.connectionInfo ?: return null
         val ssid = info.ssid?.replace("\"", "") ?: ""
         val bssid = info.bssid ?: ""
         val level = info.rssi
         val freq = info.frequency // may be 0 on some devices
-        val caps = "" // connectionInfo doesn't give capabilities; can be inferred from scanResults
+        val scanResults = WifiScanner.scanOnce(context)
+        val scanResult = scanResults.firstOrNull { it.bssid == bssid }
+        val caps = scanResult?.capabilities ?: ""
         return SimpleScanResult(ssid, bssid, level, freq, caps)
     }
 

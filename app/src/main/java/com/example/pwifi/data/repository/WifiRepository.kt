@@ -12,11 +12,14 @@ class WifiRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
-    fun getCurrentWifiInfo(): SimpleScanResult? {
+    suspend fun getCurrentWifiInfo(): SimpleScanResult? {
         return WifiScanner.getCurrentConnectionInfo(context)
     }
 
     suspend fun scanNearbyWifi(): List<SimpleScanResult> {
         return WifiScanner.scanOnce(context)
+    }
+    suspend fun measureRssi(): Int {
+        return WifiScanner.startRssiMeasure(context)
     }
 }

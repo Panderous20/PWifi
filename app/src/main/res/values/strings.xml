@@ -11,7 +11,7 @@
     <string name="download_upcase">DOWNLOAD</string>
     <string name="upload_upcase">UPLOAD</string>
     <string name="error">Error</string>
-    <string name="rssi_title">Real-Time Wi-fi Signal (RSSI)</string>
+    <string name="rssi_title">Real-Time Wi-fi Signal Within 30 Seconds (RSSI)</string>
     <string name="wifi_fail">Wi-Fi chưa được bật. Vui lòng bật Wi-Fi để quét mạng.</string>
     <string name="location_fail">Ứng dụng chưa được cấp quyền truy cập vị trí. Vui lòng cấp quyền để tiếp tục quét Wi-Fi.</string>
 </resources>

@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     id("com.google.dagger.hilt.android")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -61,6 +62,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.6.0")
     implementation("co.yml:ycharts:2.1.0")
     implementation ("io.github.ehsannarmani:compose-charts:0.2.0")
+    implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
+    implementation("com.google.firebase:firebase-ai")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

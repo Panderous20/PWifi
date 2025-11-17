@@ -166,10 +166,10 @@ fun WifiDetailDialog(wifi: SimpleScanResult, onDismiss: () -> Unit) {
     )
 }
 
-@Preview(showBackground = true, device = Devices.PIXEL)
-@Composable
-fun WifiScanScreenPreview() {
-    PWifiTheme {
-        WifiScanScreen()
-    }
-}
+//@Preview(showBackground = true, device = Devices.PIXEL)
+//@Composable
+//fun WifiScanScreenPreview() {
+//    PWifiTheme {
+//        WifiScanScreen()
+//    }
+//}
