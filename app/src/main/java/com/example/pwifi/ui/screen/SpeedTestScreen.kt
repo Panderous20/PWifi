@@ -1,11 +1,11 @@
 package com.example.pwifi.ui.screen
 
-import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,16 +25,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -44,135 +42,55 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pwifi.R
 import com.example.pwifi.data.SpeedTestUiState
-import com.example.pwifi.network.NetworkSpeedTester
 import com.example.pwifi.ui.theme.PWifiTheme
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.floor
-import kotlin.math.roundToInt
-import kotlin.random.Random
 
 @Composable
-fun SpeedTestScreen(paddingValues: PaddingValues) {
-    val coroutineScope = rememberCoroutineScope()
+fun SpeedTestScreen(
+    paddingValues: PaddingValues,
+    viewModel: SpeedTestViewModel = hiltViewModel()
+) {
+    // State này sẽ update liên tục
+    val state by viewModel.uiState.collectAsState()
 
-    var ping by remember { mutableStateOf("-") }
-    var jitter by remember { mutableStateOf("-") }
-    val downloadAnimation = remember { Animatable(0f) }
-    val uploadAnimation = remember { Animatable(0f) }
-    var isTesting by remember { mutableStateOf(false) }
-
-    val state = SpeedTestUiState(
-        ping = ping,
-        jitter = jitter,
-        downloadSpeed = downloadAnimation.value,
-        uploadSpeed = uploadAnimation.value,
-        inProgress = isTesting
+    SpeedTestDetailScreen(
+        paddingValues = paddingValues,
+        state = state,
+        onClick = viewModel::startTest
     )
-
-    fun startTest() {
-        coroutineScope.launch {
-            isTesting = true
-            ping = "-"
-            jitter = "-"
-            downloadAnimation.snapTo(0f)
-            uploadAnimation.snapTo(0f)
-
-            try {
-                val maxSpeed = 500f // Max speed để normalize (Mbps)
-
-                // Launch test thực trong background
-                val testJob = async {
-                    NetworkSpeedTester.runSpeedTest()
-                }
-
-                // Phase 1: Animate download với random values trong 15 giây
-                launch {
-                    repeat(30) {
-                        delay(500) // Mỗi giây
-                        // Random giá trị từ 20-80 Mbps
-                        val randomSpeed = Random.nextDouble(30.0, 60.0)
-                        val normalizedSpeed = (randomSpeed / maxSpeed).toFloat().coerceIn(0f, 1f)
-
-                        downloadAnimation.animateTo(
-                            targetValue = normalizedSpeed,
-                            animationSpec = tween(durationMillis = 800)
-                        )
-                    }
-                }
-
-                // Đợi animation random hoàn thành
-                delay(10000)
-
-                // Lấy kết quả thực
-                val result = testJob.await()
-
-                // Cập nhật ping và jitter
-                ping = result.ping.roundToInt().toString()
-                jitter = result.jitter.roundToInt().toString()
-
-                // Animate đến giá trị download thực
-                val realDownloadNormalized = (result.downloadMbps / maxSpeed).toFloat().coerceIn(0f, 1f)
-                downloadAnimation.animateTo(
-                    targetValue = realDownloadNormalized,
-                    animationSpec = tween(durationMillis = 1000)
-                )
-
-                // Đợi một chút trước khi bắt đầu upload animation
-                delay(500)
-
-                // Phase 2: Animate upload với random values trong 15 giây
-                // (Test upload thực đã chạy trong NetworkSpeedTester.runSpeedTest())
-                repeat(15) {
-                    delay(200)
-                    val randomSpeed = Random.nextDouble(20.0, 60.0)
-                    val normalizedSpeed = (randomSpeed / maxSpeed).toFloat().coerceIn(0f, 1f)
-
-                    uploadAnimation.animateTo(
-                        targetValue = normalizedSpeed,
-                        animationSpec = tween(durationMillis = 800)
-                    )
-                }
-
-                // Animate đến giá trị upload thực
-                val realUploadNormalized = (result.uploadMbps / maxSpeed).toFloat().coerceIn(0f, 1f)
-                uploadAnimation.animateTo(
-                    targetValue = realUploadNormalized,
-                    animationSpec = tween(durationMillis = 1000)
-                )
-
-                // Giữ nguyên giá trị này cho đến khi bấm START lại
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                ping = "Error"
-                jitter = "Error"
-                downloadAnimation.snapTo(0f)
-                uploadAnimation.snapTo(0f)
-            } finally {
-                isTesting = false
-            }
-        }
-    }
-
-    SpeedTestScreen(paddingValues ,state, ::startTest)
 }
 
 @Composable
-private fun SpeedTestScreen(
+private fun SpeedTestDetailScreen(
     paddingValues: PaddingValues,
     state: SpeedTestUiState,
     onClick: () -> Unit,
 ) {
+    // Repository trả về kết quả mỗi 200ms.
+    // tween(400) để tạo độ trễ nhẹ draw mượt mà,
+    val smoothDownloadSpeed by animateFloatAsState(
+        targetValue = state.downloadSpeed,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "DownloadAnim"
+    )
+
+    val smoothUploadSpeed by animateFloatAsState(
+        targetValue = state.uploadSpeed,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "UploadAnim"
+    )
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
@@ -192,12 +110,12 @@ private fun SpeedTestScreen(
         ) {
             SpeedIndicator(
                 title = stringResource(R.string.download_upcase),
-                speed = state.downloadSpeed,
+                speed = smoothDownloadSpeed,
                 color = Color(0xFFAE96D9)
             )
             SpeedIndicator(
                 title = stringResource(R.string.upload_upcase),
-                speed = state.uploadSpeed,
+                speed = smoothUploadSpeed,
                 color = Color(0xFF96D9AE)
             )
         }
@@ -336,7 +254,10 @@ fun AdditionInfo(ping: String, jitter: String) {
 
 @Composable
 fun SpeedValue(title: String, value: Float) {
+    // Lưu ý: value ở đây là giá trị normalized (0.0 -> 1.0)
+    // Nhân với 500f vì trong ViewModel ta đang giả định Max Speed của đồng hồ là 500Mbps
     val formattedValue = String.format("%.2f", value * 500f)
+
     Column(
         Modifier
             .fillMaxSize()
@@ -370,6 +291,31 @@ fun StartButton(
     }
 }
 
+@Preview(showBackground = true, device = Devices.PIXEL)
+@Composable
+fun GeminiResponse(
+    isEnabled: Boolean = false,
+    response: String? = "Alalala"
+) {
+    if(isEnabled)
+    {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.gemini_color),
+                contentDescription = ""
+            )
+            Text(
+                text = response ?: "",
+                textAlign = TextAlign.Start,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
 @Composable
 fun VerticalDivider() {
     Box(
@@ -385,7 +331,7 @@ fun VerticalDivider() {
 fun DefaultPreview() {
     PWifiTheme {
         Surface {
-            SpeedTestScreen(
+            SpeedTestDetailScreen(
                 paddingValues = PaddingValues(0.dp),
                 SpeedTestUiState(
                     ping = "32.4",
