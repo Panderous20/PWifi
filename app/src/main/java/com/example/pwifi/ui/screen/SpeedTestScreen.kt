@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pwifi.R
-import com.example.pwifi.data.SpeedTestUiState
+import com.example.pwifi.data.model.SpeedTestUiState
 import com.example.pwifi.ui.theme.PWifiTheme
 import kotlin.math.floor
 

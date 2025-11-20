@@ -2,7 +2,7 @@ package com.example.pwifi.ui.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pwifi.data.SpeedTestUiState
+import com.example.pwifi.data.model.SpeedTestUiState
 import com.example.pwifi.data.model.TestStage
 import com.example.pwifi.data.repository.SpeedTestRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

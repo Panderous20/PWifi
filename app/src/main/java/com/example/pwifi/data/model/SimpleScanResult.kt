@@ -1,4 +1,4 @@
-package com.example.pwifi.data
+package com.example.pwifi.data.model
 
 data class SimpleScanResult(
     val ssid: String = "",
