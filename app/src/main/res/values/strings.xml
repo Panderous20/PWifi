@@ -14,8 +14,28 @@
     <string name="rssi_title">Real-Time Wi-fi Signal Within 30 Seconds (RSSI)</string>
     <string name="wifi_fail">Wi-Fi chưa được bật. Vui lòng bật Wi-Fi để quét mạng.</string>
     <string name="location_fail">Ứng dụng chưa được cấp quyền truy cập vị trí. Vui lòng cấp quyền để tiếp tục quét Wi-Fi.</string>
-    <string name="promt_gemini">
-        "You are a network analysis assistant. I will give you the following network parameters: ping (ms), jitter (ms), download speed (Mbps), upload speed (Mbps), and RSSI (dBm). Please provide a concise analysis of the network quality, highlighting strengths, weaknesses, and overall performance in 2–3 sentences. Format your response as bullet points.
-        Ping: %1$d, Jitter: %2$d, Download Speed: %3$.2f Mbps, Upload Speed: %4$.2f Mbps"
-    </string>
+    <string name="prompt_gemini">
+    You are a telecommunications network expert. Based on the network parameters provided below, generate a short network-quality report strictly following the Markdown format specified.
+
+    Required output format (Markdown):
+    Server: Tokyo, Japan\n
+    - General Assessment: (Good/Fair/Poor)
+    - Possible Cause: (Identify the main cause based on high ping, weak speed, high jitter, or signal interference)
+    - Available Actions: (List user activities that are realistically possible with this network quality, such as browsing, messaging, listening to music, watching HD/4K video, online gaming, cloud upload, video calling)
+    - Recommendations: (2–3 specific actions the user can take to improve the connection)
+        +
+        +
+        +
+
+    Rules:
+    - Always follow the four sections above exactly, without adding or removing any sections.
+    - (maximum 150 words).
+    - Do not repeat or restate the raw metrics.
+    - Follow output format pattern
+    Data:
+    Ping: %1$d ms
+    Jitter: %2$d ms
+    Download: %3$.2f Mbps
+    Upload: %4$.2f Mbps
+</string>
 </resources>

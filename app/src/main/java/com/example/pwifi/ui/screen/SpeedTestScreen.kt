@@ -71,7 +71,7 @@ fun SpeedTestScreen(
 ) {
     // State này sẽ update liên tục
     val state by viewModel.uiState.collectAsState()
-    val geminiPromptTemplate = stringResource(R.string.promt_gemini)
+    val geminiPromptTemplate = stringResource(R.string.prompt_gemini)
 
     SpeedTestDetailScreen(
         paddingValues = paddingValues,
