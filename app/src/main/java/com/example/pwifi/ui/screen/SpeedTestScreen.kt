@@ -1,8 +1,11 @@
 package com.example.pwifi.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -25,18 +28,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -63,11 +71,12 @@ fun SpeedTestScreen(
 ) {
     // State này sẽ update liên tục
     val state by viewModel.uiState.collectAsState()
+    val geminiPromptTemplate = stringResource(R.string.promt_gemini)
 
     SpeedTestDetailScreen(
         paddingValues = paddingValues,
         state = state,
-        onClick = viewModel::startTest
+        onClick = { viewModel.startTest(geminiPromptTemplate) }
     )
 }
 
@@ -77,6 +86,16 @@ private fun SpeedTestDetailScreen(
     state: SpeedTestUiState,
     onClick: () -> Unit,
 ) {
+    val scrollState = rememberScrollState()
+
+    LaunchedEffect(state.isAiLoading, state.aiAnalysis) {
+        if (state.isAiLoading || state.aiAnalysis != null) {
+            // Delay nhẹ 1 chút (100ms) để AnimatedVisibility kịp mở ra
+            // giúp tính toán độ cao chính xác hơn
+            kotlinx.coroutines.delay(100)
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
     // Repository trả về kết quả mỗi 200ms.
     // tween(400) để tạo độ trễ nhẹ draw mượt mà,
     val smoothDownloadSpeed by animateFloatAsState(
@@ -96,7 +115,7 @@ private fun SpeedTestDetailScreen(
         verticalArrangement = Arrangement.Top,
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(bottom = paddingValues.calculateBottomPadding())
     ) {
         Header()
@@ -120,6 +139,91 @@ private fun SpeedTestDetailScreen(
             )
         }
         StartButton(!state.inProgress, onClick)
+        GeminiResponseBox(
+            isLoading = state.isAiLoading,
+            response = state.aiAnalysis
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+@Composable
+fun GeminiResponseBox(
+    isLoading: Boolean,
+    response: String?
+) {
+    // Hiệu ứng xuất hiện mượt mà
+    AnimatedVisibility(
+        visible = isLoading || response != null,
+        enter = fadeIn() + expandVertically()
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
+            // Viền gradient đẹp mắt
+            border = BorderStroke(
+                width = 1.5.dp,
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFF4285F4), Color(0xFF9C27B0)) // Màu Google AI
+                )
+            ),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                // Header của Box
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.gemini_color), // Icon Gemini
+                        contentDescription = "AI Icon",
+                        modifier = Modifier.size(24.dp),
+                        tint = Color.Unspecified // Giữ màu gốc của icon
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Network Analysis",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                if (isLoading) {
+                    // Hiệu ứng đang load
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Analyzing network quality...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                } else {
+                    // Hiển thị kết quả text
+                    Text(
+                        text = response ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+        }
     }
 }
 
