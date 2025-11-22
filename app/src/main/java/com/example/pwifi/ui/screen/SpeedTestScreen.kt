@@ -61,23 +61,26 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pwifi.R
 import com.example.pwifi.data.model.SpeedTestUiState
+import com.example.pwifi.ui.component.PWifiScaffold
 import com.example.pwifi.ui.theme.PWifiTheme
 import kotlin.math.floor
 
 @Composable
 fun SpeedTestScreen(
-    paddingValues: PaddingValues,
-    viewModel: SpeedTestViewModel = hiltViewModel()
+    paddingValues: PaddingValues, viewModel: SpeedTestViewModel = hiltViewModel()
 ) {
     // State này sẽ update liên tục
     val state by viewModel.uiState.collectAsState()
     val geminiPromptTemplate = stringResource(R.string.prompt_gemini)
 
-    SpeedTestDetailScreen(
-        paddingValues = paddingValues,
-        state = state,
-        onClick = { viewModel.startTest(geminiPromptTemplate) }
-    )
+    PWifiScaffold(
+        title = "SpeedTest"
+    ) { innerPadding ->
+        SpeedTestDetailScreen(
+            paddingValues = innerPadding,
+            state = state,
+            onClick = { viewModel.startTest(geminiPromptTemplate) })
+    }
 }
 
 @Composable
@@ -116,7 +119,7 @@ private fun SpeedTestDetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(bottom = paddingValues.calculateBottomPadding())
+            .padding(16.dp)
     ) {
         Header()
         AdditionInfo(state.ping, state.jitter)

@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.pwifi.ui.component.PWifiScaffold
 import com.example.pwifi.ui.theme.PWifiTheme
 
 @Composable
@@ -15,11 +16,11 @@ fun SettingScreen(
     paddingValues: PaddingValues,
     modifier: Modifier = Modifier
 ) {
-    Text(
-        text = "Under Contruction",
-        textAlign = TextAlign.Center,
-        modifier = modifier.fillMaxSize()
-    )
+    PWifiScaffold(
+        title = "Setting"
+    ) { innerPadding ->
+
+    }
 }
 
 @Preview

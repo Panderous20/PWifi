@@ -48,10 +48,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.pwifi.ui.screen.RssiScreen
 import com.example.pwifi.ui.screen.SettingScreen
 import com.example.pwifi.ui.screen.SpeedTestScreen
-import com.example.pwifi.ui.screen.WifiInfo
+import com.example.pwifi.ui.screen.WifiInfoScreen
 import com.example.pwifi.ui.screen.WifiScanScreen
 import com.example.pwifi.ui.theme.PWifiTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -244,7 +243,7 @@ fun MainApp() {
             when(page) {
                 0 -> SpeedTestScreen(paddingValues)
                 1 -> WifiScanScreen(paddingValues)
-                2 -> WifiInfo(paddingValues)
+                2 -> WifiInfoScreen(paddingValues)
                 3 -> SettingScreen(paddingValues)
             }
         }
