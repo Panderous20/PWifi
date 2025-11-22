@@ -1,25 +1,28 @@
 package com.example.pwifi.data.repository
 
-import android.content.Context
-import com.example.pwifi.data.SimpleScanResult
-import com.example.pwifi.network.WifiScanner
-import dagger.hilt.android.qualifiers.ApplicationContext
-import jakarta.inject.Singleton
+import com.example.pwifi.data.datasource.WifiDataSource
+import com.example.pwifi.data.model.SimpleScanResult
 import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class WifiRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    private val dataSource: WifiDataSource
 ) {
 
     suspend fun getCurrentWifiInfo(): SimpleScanResult? {
-        return WifiScanner.getCurrentConnectionInfo(context)
+        return dataSource.getCurrentConnectionInfo()
+    }
+
+    suspend fun getCachedWifi(): List<SimpleScanResult> {
+        return dataSource.getCachedScanResults()
     }
 
     suspend fun scanNearbyWifi(): List<SimpleScanResult> {
-        return WifiScanner.scanOnce(context)
+        return dataSource.requestNewScan()
     }
+
     suspend fun measureRssi(): Int {
-        return WifiScanner.startRssiMeasure(context)
+        return dataSource.measureRssi()
     }
 }
