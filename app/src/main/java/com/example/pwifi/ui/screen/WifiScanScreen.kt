@@ -62,6 +62,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +73,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pwifi.R
 import com.example.pwifi.data.model.SimpleScanResult
 import com.example.pwifi.ui.component.PWifiScaffold
+import com.example.pwifi.ui.component.WifiChannelGraph
 import com.example.pwifi.viewmodel.WifiScanViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -147,9 +149,23 @@ fun WifiScanScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Placeholder cho Chart
             item {
-                ChartPlaceholderCard()
+                Text(
+                    text = "Channel Graph (2.4 GHz)",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                if (wifiList.isNotEmpty()) {
+                    // Gọi Graph mới
+                    WifiChannelGraph(wifiList = wifiList)
+                } else {
+                    // Empty state
+                    Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("No 2.4GHz networks found", color = MaterialTheme.colorScheme.outline)
+                    }
+                }
             }
 
             // Tiêu đề danh sách
@@ -175,40 +191,6 @@ fun WifiScanScreen(
     // Dialog chi tiết
     selectedWifi?.let { wifi ->
         WifiDetailDialog(wifi) { viewModel.selectWifi(null) }
-    }
-}
-
-@Composable
-fun ChartPlaceholderCard() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1.8f), // Tỷ lệ khung hình chữ nhật
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Default.SignalWifi4Bar,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Under Contruction)",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-        }
     }
 }
 
