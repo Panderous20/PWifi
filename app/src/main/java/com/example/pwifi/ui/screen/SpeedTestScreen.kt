@@ -119,9 +119,8 @@ private fun SpeedTestDetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(16.dp)
+            .padding(top = paddingValues.calculateTopPadding() + 24.dp)
     ) {
-        Header()
         AdditionInfo(state.ping, state.jitter)
         Spacer(modifier = Modifier.height(36.dp))
         Column(
@@ -228,15 +227,6 @@ fun GeminiResponseBox(
             }
         }
     }
-}
-
-@Composable
-fun Header() {
-    Text(
-        text = "SPEEDTEST",
-        modifier = Modifier.padding(bottom = 32.dp, top = 32.dp),
-        style = MaterialTheme.typography.headlineMedium
-    )
 }
 
 @Composable
