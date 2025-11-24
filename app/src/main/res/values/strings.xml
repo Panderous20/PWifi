@@ -11,27 +11,29 @@
     <string name="download_upcase">DOWNLOAD</string>
     <string name="upload_upcase">UPLOAD</string>
     <string name="error">Error</string>
-    <string name="rssi_title">Real-Time Wi-fi Signal Within 30 Seconds (RSSI)</string>
-    <string name="wifi_fail">Wi-Fi chưa được bật. Vui lòng bật Wi-Fi để quét mạng.</string>
-    <string name="location_fail">Ứng dụng chưa được cấp quyền truy cập vị trí. Vui lòng cấp quyền để tiếp tục quét Wi-Fi.</string>
+    <string name="wifi_info_error">No Wi-Fi connected or Location permission denied.</string>
+    <string name="rssi_title">Real-Time Wi-Fi Signal Strength per second (RSSI)</string>
+    <string name="rssi_chart_label">Signal Strength (dBm)</string>
+    <string name="wifi_fail">Turn on Wi-Fi to scan nearby networks</string>
+    <string name="location_fail">Please grant the permission to continue scanning Wi-Fi.</string>
     <string name="prompt_gemini">
     You are a telecommunications network expert. Based on the network parameters provided below, generate a short network-quality report strictly following the Markdown format specified.
 
-    Required output format (Markdown):
+    Required Markdown Output (copy the exact line breaks):
     Server: Tokyo, Japan\n
     - General Assessment: (Good/Fair/Poor)
     - Possible Cause: (Identify the main cause based on high ping, weak speed, high jitter, or signal interference)
     - Available Actions: (List user activities that are realistically possible with this network quality, such as browsing, messaging, listening to music, watching HD/4K video, online gaming, cloud upload, video calling)
     - Recommendations: (2–3 specific actions the user can take to improve the connection)
-        +
-        +
-        +
+        1.
+        2.
+        3.
 
     Rules:
-    - Always follow the four sections above exactly, without adding or removing any sections.
-    - (maximum 150 words).
-    - Do not repeat or restate the raw metrics.
-    - Follow output format pattern
+    - Follow the 4 sections exactly.
+    - Maximum 150 words.
+    - Do not repeat raw metrics.
+    - Maintain exact newline structure.
     Data:
     Ping: %1$d ms
     Jitter: %2$d ms
