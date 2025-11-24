@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pwifi.R
 import com.example.pwifi.data.model.SimpleScanResult
@@ -131,8 +132,6 @@ fun WifiInfoScreen(
                     onToggleMonitor = { viewModel.toggleMonitoring() },
                     onRefreshInfo = { viewModel.getWifiInfo() }
                 )
-
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -258,6 +257,10 @@ fun RssiChartCard(
             "${(yValue - 100).toInt()} dBm"
         }
     }
+    val axisTitleComponent = rememberTextComponent(
+        color = MaterialTheme.colorScheme.onSurface,
+        textSize = 14.sp,
+    )
     val lineColor = Color(0xFF23AF92)
     val legendIconComponent = rememberShapeComponent(
         fill = fill(lineColor),
@@ -289,8 +292,15 @@ fun RssiChartCard(
                 ),
                 rangeProvider = RangeProvider
             ),
-            startAxis = VerticalAxis.rememberStart(valueFormatter = formatter),
-            bottomAxis = HorizontalAxis.rememberBottom(),
+            startAxis = VerticalAxis.rememberStart(
+                title = "Signal Strength (dBm)",
+                titleComponent = axisTitleComponent,
+                valueFormatter = formatter
+            ),
+            bottomAxis = HorizontalAxis.rememberBottom(
+                title = "Time (second)",
+                titleComponent = axisTitleComponent
+            ),
             marker = rememberMarker(valueFormatter = markerFormatter),
             legend = rememberHorizontalLegend(
                 items = {
@@ -300,7 +310,7 @@ fun RssiChartCard(
             ),
         ),
         modelProducer = modelProducer, //Nguồn dữ liệu
-        modifier = Modifier.height(300.dp),
+        modifier = Modifier.height(350.dp),
         scrollState = rememberVicoScrollState(scrollEnabled = false) // Tắt scroll để chart tự trôi
     )
 }
@@ -379,6 +389,16 @@ fun ControlButtons(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Button Refresh Info
+        OutlinedButton(
+            onClick = onRefreshInfo,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(imageVector = Icons.Filled.Save, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Save Result")
+        }
+
         // Button Start/Stop
         Button(
             onClick = onToggleMonitor,
@@ -394,16 +414,6 @@ fun ControlButtons(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(if (isMonitoring) "Stop Monitor" else "Start Monitor")
-        }
-
-        // Button Refresh Info
-        OutlinedButton(
-            onClick = onRefreshInfo,
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(imageVector = Icons.Filled.Save, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Save Result")
         }
     }
 }
