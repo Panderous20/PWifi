@@ -105,10 +105,11 @@ class SpeedTestRepositoryImpl @Inject constructor() : SpeedTestRepository {
     }.flowOn(Dispatchers.IO)
 
     private suspend fun measurePingAndJitter(): Pair<Double, Double> {
-        val url = "${LIBRESPEED_SERVER}empty.php"
+
         var minPing = Double.MAX_VALUE
         val pings = mutableListOf<Double>()
 
+        val url = "${LIBRESPEED_SERVER}empty.php"
         try { client.newCall(Request.Builder().url("$url?r=${Math.random()}").build()).execute().close() } catch (_: Exception) {}
 
         repeat(10) {
@@ -214,6 +215,12 @@ class SpeedTestRepositoryImpl @Inject constructor() : SpeedTestRepository {
         // Hủy workers - gây ra độ trễ nhỏ để dọn dẹp resources
         workers.forEach { it.cancel() }
 
-        return@coroutineScope currentEmaSpeed
+        val finalTotalBytes = totalBytes.get()
+        val actualDurationSec = (System.currentTimeMillis() - startTime) / 1000.0
+        val averageSpeedMbps = (finalTotalBytes * 8 * 1.06) / actualDurationSec / 1_000_000.0
+
+        return@coroutineScope averageSpeedMbps
+
+//        return@coroutineScope currentEmaSpeed
     }
 }

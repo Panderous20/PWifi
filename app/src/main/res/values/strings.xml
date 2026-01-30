@@ -3,41 +3,124 @@
     <string name="app_description">Ptit Wifi-Monitoring Application</string>
     <string name="speed_test">Speed Test</string>
     <string name="wifi_list">Wi-Fi List</string>
-    <string name="ping">PING</string>
-    <string name="ping_value">%1$s ms</string>
-    <string name="jitter">JITTER</string>
-    <string name="jitter_value">%1$s ms</string>
-    <string name="megabit_per_second">Mbps</string>
+
+    <string name="ping" translatable="false">PING</string>
+    <string name="ping_value" translatable="false">%1$s ms</string>
+    <string name="jitter" translatable="false">JITTER</string>
+    <string name="jitter_value" translatable="false">%1$s ms</string>
+    <string name="megabit_per_second" translatable="false">Mbps</string>
     <string name="download_upcase">DOWNLOAD</string>
     <string name="upload_upcase">UPLOAD</string>
     <string name="error">Error</string>
+    <string name="start_button">START</string>
+    <string name="testing_state">TESTING...</string>
+    <string name="cancel">Cancel</string>
+    <string name="choose_language">Choose Language</string>
+    <string name="version">Version %s</string>
+    <string name="about_app">About App</string>
+    <string name="language">Language</string>
+    <string name="general_setting">General</string>
+    <string name="setting_title">Setting</string>
     <string name="wifi_info_error">No Wi-Fi connected or Location permission denied.</string>
+
     <string name="rssi_title">Real-Time Wi-Fi Signal Strength per second (RSSI)</string>
     <string name="rssi_chart_label">Signal Strength (dBm)</string>
-    <string name="wifi_fail">Turn on Wi-Fi to scan nearby networks</string>
+
+    <string name="wifi_fail">Connect Wi-Fi to process</string>
     <string name="location_fail">Please grant the permission to continue scanning Wi-Fi.</string>
+
     <string name="prompt_gemini">
-    You are a telecommunications network expert. Based on the network parameters provided below, generate a short network-quality report strictly following the Markdown format specified.
+<![CDATA[
+    You are a Senior Telecommunications Engineer. Analyze the network connection from Vietnam to a server in Tokyo, Japan.
 
-    Required Markdown Output (copy the exact line breaks):
-    Server: Tokyo, Japan\n
-    - General Assessment: (Good/Fair/Poor)
-    - Possible Cause: (Identify the main cause based on high ping, weak speed, high jitter, or signal interference)
-    - Available Actions: (List user activities that are realistically possible with this network quality, such as browsing, messaging, listening to music, watching HD/4K video, online gaming, cloud upload, video calling)
-    - Recommendations: (2–3 specific actions the user can take to improve the connection)
-        1.
-        2.
-        3.
+Input Data:
+Ping: %1$d ms
+Jitter: %2$d ms
+Download: %3$.2f Mbps
+Upload: %4$.2f Mbps
+RSSI: %5$s
 
-    Rules:
-    - Follow the 4 sections exactly.
-    - Maximum 150 words.
-    - Do not repeat raw metrics.
-    - Maintain exact newline structure.
-    Data:
-    Ping: %1$d ms
-    Jitter: %2$d ms
-    Download: %3$.2f Mbps
-    Upload: %4$.2f Mbps
+### 1. CORE ANALYSIS LOGIC:
+* **Context:** International Route (VN -> JP). Ping (80-180ms) is INHERENT LATENCY due to physics. Do not flag high ping as an error unless it exceeds 200ms.
+* **Signal Strength (RSSI) Scale:**
+    * **Excellent/Good:** > -65 dBm.
+    * **Fair:** -65 dBm to -75 dBm.
+    * **Poor:** < -75 dBm (This is the primary cause of instability).
+* **Assessment Scale:**
+    * Combined Score (Speed + Stability + Signal) determines the rating.
+    * Avoid harsh words like "Bad/Terrible". Use "Needs Improvement" or "Unstable".
+
+### 2. DIAGNOSIS MATRIX (The "Brain" of the analysis):
+* **CASE 1: WEAK SIGNAL (RSSI < -75 dBm)**
+    * *Root Cause:* Physical distance or obstacles (walls, doors).
+    * *Key Indicator:* Low RSSI regardless of Jitter/Speed.
+* **CASE 2: INTERFERENCE (RSSI > -65 dBm BUT Jitter > 40ms)**
+    * *Root Cause:* Channel congestion (Co-channel interference) or noisy environment.
+    * *Key Indicator:* Signal is Strong, but Stability (Jitter) is bad.
+* **CASE 3: SATURATION (RSSI > -65 dBm, Jitter Low, BUT Speed < 10Mbps)**
+    * *Root Cause:* Bandwidth limit, ISP throttling, or background downloads.
+* **CASE 4: OPTIMAL:** High Speed, Low Jitter, Good RSSI.
+
+### 3. RECOMMENDATION ENGINE (Vary sentence structures):
+Generate 3 specific tips based on the DIAGNOSIS MATRIX above.
+* **If CASE 1 (Weak Signal):** Focus on position.
+    * Suggest moving closer to the AP.
+    * Suggest checking for thick walls/metal objects blocking the signal.
+    * Suggest using a Wi-Fi Repeater or Mesh system.
+* **If CASE 2 (Interference):** Focus on configuration.
+    * Strongly suggest switching Wi-Fi channels (1, 6, 11 for 2.4GHz).
+    * Suggest switching to 5GHz band if available to avoid noise.
+    * Suggest restarting the router to trigger auto-channel selection.
+* **If CASE 3 (Saturation):** Focus on usage.
+    * Check for background downloads on other devices.
+    * Restart router to clear cache/RAM.
+* **If CASE 4 (Optimal):** Maintenance tips.
+    * Keep firmware updated.
+
+### 4. TONE GUIDELINES (Professional & Objective):
+* Describe the *correlation* between Signal and Speed.
+    * *Example:* "Low signal strength (%5$s) is the primary cause of bandwidth attenuation."
+    * *Example:* "Signal is excellent (%5$s) but high latency variance indicates interference from neighboring networks."
+
+### REQUIRED OUTPUT (IN ENGLISH):
+Generate the report strictly following this Markdown format.
+
+Server: Tokyo, Japan (International)
+- **Overall Rating:** (Good / Fair / Average / Needs Improvement)
+- **Technical Analysis:** (Write a balanced paragraph explaining the correlation between RSSI, Jitter, and Speed based on the Diagnosis Matrix).
+- **Service Capability:** (List suitable activities like 4K Streaming, Gaming, Video Call. Be honest about lag/buffering if metrics are poor).
+- **Recommendations:**
+    1. (Generate a tip based on the specific Root Cause detected)
+    2. (Generate a tip based on the specific Root Cause detected)
+    3. (Generate a generic maintenance tip)
+    ]]>
 </string>
+    <string name="wifi_info_title">Wi-Fi Info</string>
+    <string name="wifi_scan_title">Wi-Fi Scanner</string>
+    <string name="connected_wifi">Connected Wi-Fi</string>
+    <string name="frequency">Freq</string>
+    <string name="security">Security</string>
+    <string name="stop_monitor">Stop Monitor</string>
+    <string name="start_monitor">Start Monitor</string>
+    <string name="save_result">Save Result</string>
+    <string name="rssi_chart_y_label">Signal Strength (dBm)</string>
+    <string name="rssi_chart_x_label">Time (second)</string>
+    <string name="rssi_chart_legend">Signal Strength Per Second (dBm/s)</string>
+    <string name="refresh">Refresh</string>
+    <string name="save_success">Saved to: %1$s</string>
+    <string name="save_error">Failed to save.</string>
+    <string name="available_networks">Available networks</string>
+    <string name="wifi_detail">Wi-Fi Detail</string>
+    <string name="rssi">Signal Strength (RSSI)</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="dark_mode_subtitle">Click to switch display mode</string>
+    <string name="standard">Standard</string>
+    <string name="range">Range</string>
+    <string name="center_freq">Center Freq</string>
+    <string name="channel_width">Channel Width</string>
+    <string name="channel_graph">Channel Graph</string>
+    <string name="channel_graph_error">No networks found</string>
+    <string name="analyzing_network">Analyzing network quality...</string>
+    <string name="network_analysis">Network Analysis</string>
+    <string name="link_speed">Link Speed</string>
 </resources>

@@ -6,6 +6,7 @@ import com.example.pwifi.data.model.SpeedTestUiState
 import com.example.pwifi.data.model.TestStage
 import com.example.pwifi.data.repository.GeminiRepository
 import com.example.pwifi.data.repository.SpeedTestRepository
+import com.example.pwifi.data.repository.WifiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +18,8 @@ import kotlin.math.roundToInt
 @HiltViewModel
 class SpeedTestViewModel @Inject constructor(
     private val repository: SpeedTestRepository,
-    private val geminiRepository: GeminiRepository
+    private val geminiRepository: GeminiRepository,
+    private val wifiRepository: WifiRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SpeedTestUiState())
@@ -83,7 +85,8 @@ class SpeedTestViewModel @Inject constructor(
                                     res.ping.roundToInt(),
                                     res.jitter.roundToInt(),
                                     res.downloadMbps,
-                                    res.uploadMbps
+                                    res.uploadMbps,
+                                    wifiRepository.measureRssi()
                                 )
                             }
                         }
@@ -98,11 +101,13 @@ class SpeedTestViewModel @Inject constructor(
         ping: Int,
         jitter: Int,
         download: Double,
-        upload: Double
+        upload: Double,
+        rssi: Int
     ) {
         viewModelScope.launch {
             try {
-                val formattedPrompt = String.format(template, ping, jitter, download, upload)
+                val rssiString = if (rssi == 0) "Unknown" else "$rssi dBm"
+                val formattedPrompt = String.format(template, ping, jitter, download, upload, rssiString)
 
                 val response = geminiRepository.getRespone(formattedPrompt)
 

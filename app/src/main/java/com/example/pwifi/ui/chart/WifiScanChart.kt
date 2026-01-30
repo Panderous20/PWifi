@@ -23,13 +23,21 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import com.example.pwifi.data.model.SimpleScanResult
 
+// Enum để chọn chế độ vẽ
+enum class WifiBand { GHZ_2_4, GHZ_5 }
+
 @Composable
 fun WifiChannelGraph(
     wifiList: List<SimpleScanResult>,
+    band: WifiBand = WifiBand.GHZ_2_4, // Default là 2.4
     modifier: Modifier = Modifier
 ) {
-    val wifi24g = remember(wifiList) {
-        wifiList.filter { it.frequency in 2400..2500 }
+    // Lọc Wifi theo băng tần
+    val filteredWifi = remember(wifiList, band) {
+        wifiList.filter {
+            if (band == WifiBand.GHZ_2_4) it.frequency in 2400..2499
+            else it.frequency > 5000
+        }
     }
 
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
@@ -37,7 +45,7 @@ fun WifiChannelGraph(
 
     Box(
         modifier = modifier
-            .height(350.dp)
+            .height(300.dp)
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .padding(start = 8.dp, end = 16.dp, top = 24.dp, bottom = 8.dp)
@@ -49,8 +57,23 @@ fun WifiChannelGraph(
             // CẤU HÌNH TRỤC X
             val paddingLeft = 90f
             val graphWidth = width - paddingLeft
-            val minVisChannel = -1
-            val maxVisChannel = 16
+
+            // Setup thông số dựa trên băng tần
+            val minVisChannel: Float
+            val maxVisChannel: Float
+            val xLabelStep: Int
+
+            if (band == WifiBand.GHZ_2_4) {
+                minVisChannel = -1f
+                maxVisChannel = 16f
+                xLabelStep = 1
+            } else {
+                // 5GHz
+                minVisChannel = 32f
+                maxVisChannel = 180f
+                xLabelStep = 16
+            }
+
             val stepX = graphWidth / (maxVisChannel - minVisChannel)
 
             // CẤU HÌNH TRỤC Y
@@ -58,13 +81,15 @@ fun WifiChannelGraph(
             val maxRssi = -20f
             val rssiRange = maxRssi - minRssi
 
-            // GRID
+            // VẼ GRID & TRỤC
             drawGraphGrid(
                 width = width,
                 height = height,
                 paddingLeft = paddingLeft,
                 stepX = stepX,
                 minVisChannel = minVisChannel,
+                maxVisChannel = maxVisChannel,
+                xLabelStep = xLabelStep,
                 gridColor = gridColor,
                 textColor = labelColor,
                 minRssi = minRssi,
@@ -72,18 +97,23 @@ fun WifiChannelGraph(
             )
 
             // VẼ WIFI
-            wifi24g.forEach { wifi ->
-                val centerChannel = convertFreqToChannel(wifi.frequency)
+            filteredWifi.forEach { wifi ->
+                val drawFreq = if (wifi.centerFreq > 2400) wifi.centerFreq else wifi.frequency
+                val centerChannel = convertFreqToChannel(drawFreq)
 
-                if (centerChannel in 1..14) {
+                // Kiểm tra nằm trong vùng hiển thị (Coordinate Range)
+                if (centerChannel in minVisChannel..maxVisChannel) {
+
                     val centerX = paddingLeft + ((centerChannel - minVisChannel) * stepX)
 
-                    // Tính Y (Target Peak)
                     val safeLevel = wifi.level.toFloat().coerceIn(minRssi, maxRssi)
                     val heightRatio = (safeLevel - minRssi) / rssiRange
                     val targetPeakY = height - (heightRatio * height)
 
-                    val widthPx = 4 * stepX
+                    val safeWidth = if (wifi.channelWidth > 0) wifi.channelWidth else 20
+                    val channelsSpan = safeWidth / 5f
+                    val widthPx = channelsSpan * stepX
+
                     val color = getVremColor(wifi.ssid)
 
                     drawBellCurve(
@@ -103,50 +133,60 @@ fun WifiChannelGraph(
 
 fun DrawScope.drawGraphGrid(
     width: Float, height: Float, paddingLeft: Float, stepX: Float,
-    minVisChannel: Int, gridColor: Color, textColor: Int,
+    minVisChannel: Float, maxVisChannel: Float, xLabelStep: Int,
+    gridColor: Color, textColor: Int,
     minRssi: Float, maxRssi: Float
 ) {
     val textPaint = Paint().apply {
         color = textColor
-        textSize = 38f
+        textSize = 32f
         textAlign = Paint.Align.CENTER
-        typeface = Typeface.DEFAULT_BOLD
+        typeface = Typeface.DEFAULT
     }
 
-    //Font chữ số dBm (Trục Y)
     val axisPaint = Paint().apply {
         color = textColor
         textSize = 34f
         textAlign = Paint.Align.RIGHT
     }
 
+    // Vẽ trục Y (dBm)
     val dbmStep = 10
     val range = maxRssi - minRssi
     for (dbm in minRssi.toInt()..maxRssi.toInt() step dbmStep) {
         val y = height - ((dbm - minRssi) / range * height)
-
-        drawContext.canvas.nativeCanvas.drawText(
-            "$dbm",
-            paddingLeft - 15f,
-            y + 10f,
-            axisPaint
-        )
-
+        drawContext.canvas.nativeCanvas.drawText("$dbm", paddingLeft - 15f, y + 10f, axisPaint)
         drawLine(gridColor.copy(alpha = 0.15f), Offset(paddingLeft, y), Offset(width, y), 1f)
     }
 
-    for (ch in 1..14) {
+    // Vẽ trục X (Channel Number)
+    // Duyệt hết toàn bộ vùng coordinate
+    val startLoop = (minVisChannel.toInt() / xLabelStep) * xLabelStep
+
+    for (ch in startLoop..maxVisChannel.toInt() step xLabelStep) {
+        // Không bao giờ vẽ kênh <= 0
+        if (ch <= 0) continue
+
+        // Nếu là chế độ 2.4GHz (bước nhảy 1), chỉ vẽ đến kênh 14
+        if (xLabelStep == 1 && ch > 14) continue
+
+        // Không vẽ nếu nằm ngoài vùng nhìn thấy
+        if (ch < minVisChannel) continue
+        // ----------------------------------------
+
         val x = paddingLeft + ((ch - minVisChannel) * stepX)
+
         drawLine(gridColor, Offset(x, 0f), Offset(x, height), 1f)
 
         drawContext.canvas.nativeCanvas.drawText(
             "$ch",
             x,
-            height + 50f,
+            height + 40f,
             textPaint
         )
     }
 
+    // Khung bao quanh
     drawRect(
         color = gridColor,
         topLeft = Offset(paddingLeft, 0f),
@@ -159,6 +199,8 @@ fun DrawScope.drawBellCurve(
     name: String, centerX: Float, targetPeakY: Float, baseY: Float, widthPx: Float, color: Color, textColor: Int
 ) {
     val path = Path()
+    // startX và endX tự động tính toán dựa trên widthPx
+    // Nếu widthPx rộng (40MHz) thì chân sóng sẽ bè ra 2 bên
     val startX = centerX - (widthPx / 2)
     val endX = centerX + (widthPx / 2)
 
@@ -188,10 +230,18 @@ fun DrawScope.drawBellCurve(
 }
 
 // UTILS
-fun convertFreqToChannel(freq: Int): Int {
-    if (freq == 2484) return 14
-    if (freq < 2412 || freq > 2484) return -1
-    return (freq - 2407) / 5
+fun convertFreqToChannel(freq: Int): Float {
+    return when {
+        // Băng tần 2.4GHz (2400 - 2484 MHz)
+        freq == 2484 -> 14f // Ngoại lệ kênh 14
+        freq in 2400..2483 -> (freq - 2407) / 5f
+
+        // Băng tần 5GHz (5150 - 5925 MHz)
+        // Công thức chuẩn: Freq = 5000 + (5 * Channel)
+        freq > 5000 -> (freq - 5000) / 5f
+
+        else -> -1f
+    }
 }
 
 fun getVremColor(ssid: String): Color {

@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import com.example.pwifi.data.model.SimpleScanResult
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -75,12 +76,34 @@ class WifiDataSourceImpl @Inject constructor(
                 it.BSSID == currentBSSID || it.SSID.replace("\"", "") == currentSSID
             }
 
+            var stdLabel = ""
+            var width = 20
+            var center = 0
+            var rangeStr = ""
+
+            // Nếu tìm thấy bản ghi ScanResult khớp với Wifi đang kết nối
+            if (cachedScan != null) {
+                stdLabel = getWifiStandardLabel(cachedScan)
+                width = getChannelWidthMhz(cachedScan.channelWidth)
+                center = getCenterFrequency(cachedScan)
+
+                val actualCenter = if (center > 0) center else cachedScan.frequency
+                val startFreq = actualCenter - (width / 2)
+                val endFreq = actualCenter + (width / 2)
+                rangeStr = "$startFreq - $endFreq MHz"
+            }
+
             return@withContext SimpleScanResult(
                 ssid = currentSSID,
                 bssid = currentBSSID,
                 level = info.rssi,
                 frequency = info.frequency,
-                capabilities = cachedScan?.capabilities ?: ""
+                capabilities = cachedScan?.capabilities ?: "",
+                linkSpeed = info.linkSpeed,
+                standardLabel = stdLabel,
+                channelWidth = width,
+                centerFreq = center,
+                freqRangeLabel = rangeStr
             )
         } catch (e: SecurityException) {
             e.printStackTrace()
@@ -140,18 +163,77 @@ class WifiDataSourceImpl @Inject constructor(
     }
 
     private fun mapToSimple(list: List<ScanResult>): List<SimpleScanResult> {
-        return list.map { sr ->
+        return list
+            .filter { it.level < 0 && it.level > -100 }
+            .map { sr ->
+            // Xác định chuẩn Wifi (4, 5, 6...)
+            val stdLabel = getWifiStandardLabel(sr)
+
+            // Lấy độ rộng kênh (Channel Width)
+            val width = getChannelWidthMhz(sr.channelWidth)
+
+            // Lấy tần số trung tâm (Center Freq)
+            val center = getCenterFrequency(sr)
+
+            val actualCenter = if (center > 0) center else sr.frequency
+            val startFreq = actualCenter - (width / 2)
+            val endFreq = actualCenter + (width / 2)
+            val rangeStr = "$startFreq - $endFreq MHz"
+
             SimpleScanResult(
                 ssid = sr.SSID ?: "",
                 bssid = sr.BSSID ?: "",
                 level = sr.level,
                 frequency = sr.frequency,
-                capabilities = sr.capabilities ?: ""
+                capabilities = sr.capabilities ?: "",
+                standardLabel = stdLabel,
+                channelWidth = width,
+                centerFreq = actualCenter,
+                freqRangeLabel = rangeStr
             )
         }.sortedByDescending { it.level }
     }
 
+    private fun getWifiStandardLabel(sr: ScanResult): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return when (sr.wifiStandard) {
+                ScanResult.WIFI_STANDARD_LEGACY -> "Legacy"
+                ScanResult.WIFI_STANDARD_11N -> "Wifi 4"
+                ScanResult.WIFI_STANDARD_11AC -> "Wifi 5"
+                ScanResult.WIFI_STANDARD_11AX -> "Wifi 6"
+                ScanResult.WIFI_STANDARD_11BE -> "Wifi 7" // API 33+
+                else -> ""
+            }
+        }
+        // Fallback cho Android cũ (dựa trên tần số và độ rộng)
+        return if (sr.frequency > 5000 && sr.channelWidth >= ScanResult.CHANNEL_WIDTH_80MHZ) "Wifi 5"
+        else if (sr.frequency > 2400) "Wifi 4"
+        else ""
+    }
+
+    // Logic đổi Constant sang số MHz
+    private fun getChannelWidthMhz(widthConstant: Int): Int {
+        return when (widthConstant) {
+            ScanResult.CHANNEL_WIDTH_20MHZ -> 20
+            ScanResult.CHANNEL_WIDTH_40MHZ -> 40
+            ScanResult.CHANNEL_WIDTH_80MHZ -> 80
+            ScanResult.CHANNEL_WIDTH_160MHZ -> 160
+            ScanResult.CHANNEL_WIDTH_320MHZ -> 320
+            else -> 20 // Mặc định
+        }
+    }
+
+    // Logic lấy tần số trung tâm (API 23+)
+    private fun getCenterFrequency(sr: ScanResult): Int {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return sr.centerFreq0
+        }
+        return sr.frequency
+    }
+
     private fun hasLocationPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
     }
 }

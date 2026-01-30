@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.NetworkWifi1Bar
 import androidx.compose.material.icons.filled.NetworkWifi2Bar
@@ -35,20 +35,17 @@ import androidx.compose.material.icons.filled.NetworkWifi3Bar
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SignalWifi0Bar
 import androidx.compose.material.icons.filled.SignalWifi4Bar
-import androidx.compose.material.icons.filled.SignalWifiBad
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -58,11 +55,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,6 +68,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pwifi.R
 import com.example.pwifi.data.model.SimpleScanResult
 import com.example.pwifi.ui.component.PWifiScaffold
+import com.example.pwifi.ui.component.WifiBand
 import com.example.pwifi.ui.component.WifiChannelGraph
 import com.example.pwifi.viewmodel.WifiScanViewModel
 
@@ -89,15 +85,20 @@ fun WifiScanScreen(
     val selectedWifi by viewModel.selectedWifi.collectAsState()
     val wifiList by viewModel.wifiList.collectAsState()
 
+    // STATE CHO DROPDOWN
+    // Mặc định chọn 2.4GHz
+    var selectedBand by remember { mutableStateOf(WifiBand.GHZ_2_4) }
+    // Trạng thái mở/đóng menu
+    var isMenuExpanded by remember { mutableStateOf(false) }
+
     // Launcher xin quyền
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasPermission = isGranted
-        if (isGranted) viewModel.scanWifi() // Cấp quyền xong thì quét luôn
+        if (isGranted) viewModel.scanWifi()
     }
 
-    // Check quyền lần đầu mở màn hình
     LaunchedEffect(Unit) {
         hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (hasPermission) {
@@ -105,7 +106,6 @@ fun WifiScanScreen(
         }
     }
 
-    // Hàm xử lý sự kiện bấm nút Quét
     val onScanClick: () -> Unit = {
         val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
         when {
@@ -114,7 +114,6 @@ fun WifiScanScreen(
             }
             !isGpsEnabled -> {
                 Toast.makeText(context, context.getString(R.string.location_fail), Toast.LENGTH_LONG).show()
-                // Mở cài đặt GPS
                 context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
             }
             else -> {
@@ -125,7 +124,7 @@ fun WifiScanScreen(
     }
 
     PWifiScaffold(
-        title = "Wi-Fi Scanner",
+        title = stringResource(R.string.wifi_scan_title),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onScanClick,
@@ -142,28 +141,69 @@ fun WifiScanScreen(
                 .fillMaxSize()
                 .padding(top = innerPadding.calculateTopPadding()),
             contentPadding = PaddingValues(
-                top = 16.dp,
-                start = 16.dp,
-                end = 16.dp,
-                bottom = listBottomPadding
+                top = 16.dp, start = 16.dp, end = 16.dp, bottom = listBottomPadding
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // HEADER + GRAPH
             item {
-                Text(
-                    text = "Channel Graph (2.4 GHz)",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(R.string.channel_graph),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
 
+                    // DROPDOWN MENU
+                    Box {
+                        // Nút bấm hiển thị lựa chọn hiện tại
+                        TextButton(
+                            onClick = { isMenuExpanded = true }
+                        ) {
+                            Text(
+                                text = if (selectedBand == WifiBand.GHZ_2_4) "2.4 GHz" else "5 GHz",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        }
+
+                        // Menu
+                        DropdownMenu(
+                            expanded = isMenuExpanded,
+                            onDismissRequest = { isMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("2.4 GHz") },
+                                onClick = {
+                                    selectedBand = WifiBand.GHZ_2_4
+                                    isMenuExpanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("5 GHz") },
+                                onClick = {
+                                    selectedBand = WifiBand.GHZ_5
+                                    isMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // HIỂN THỊ GRAPH
                 if (wifiList.isNotEmpty()) {
-                    // Gọi Graph mới
-                    WifiChannelGraph(wifiList = wifiList)
+                    WifiChannelGraph(
+                        wifiList = wifiList,
+                        band = selectedBand
+                    )
                 } else {
-                    // Empty state
                     Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("No 2.4GHz networks found", color = MaterialTheme.colorScheme.outline)
+                        Text(stringResource(R.string.channel_graph_error), color = MaterialTheme.colorScheme.outline)
                     }
                 }
             }
@@ -171,7 +211,7 @@ fun WifiScanScreen(
             // Tiêu đề danh sách
             item {
                 Text(
-                    text = "Available networks (${wifiList.size})",
+                    text = stringResource(R.string.available_networks) + " (${wifiList.size})",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -204,6 +244,21 @@ fun WifiItemCard(
     val isSecure = wifi.capabilities.contains("WPA") || wifi.capabilities.contains("WEP")
     val signalColor = getSignalColor(wifi.level)
 
+    val standardNumber = remember(wifi.standardLabel) {
+        when {
+            wifi.standardLabel.contains("7") -> "7"
+            wifi.standardLabel.contains("6") -> "6"
+            wifi.standardLabel.contains("5") -> "5"
+            wifi.standardLabel.contains("4") -> "4"
+            else -> null
+        }
+    }
+    val badgeColor = when {
+        wifi.standardLabel.contains("6") || wifi.standardLabel.contains("7") -> Color(0xFF6750A4) // Tím (Wifi xịn)
+        wifi.standardLabel.contains("5") -> Color(0xFF006C51) // Xanh (Wifi thường)
+        else -> Color.Gray
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -222,23 +277,44 @@ fun WifiItemCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            Box(contentAlignment = Alignment.BottomEnd) {
+            Box(
+                modifier = Modifier.size(36.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
                     imageVector = signalIcon,
                     contentDescription = null,
                     tint = signalColor,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier
+                        .size(32.dp)
+                        .align(Alignment.TopCenter)
                 )
-                // Nếu có bảo mật thêm icon ổ khóa nhỏ
+                if (standardNumber != null) {
+                    Text(
+                        text = standardNumber,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = badgeColor,
+                        fontSize = 11.sp,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceContainer,
+                                CircleShape
+                            )
+                            .padding(horizontal = 2.dp)
+                    )
+                }
+
+                // 3. Icon Ổ khóa
                 if (isSecure) {
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Secured",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
-                            .size(14.dp)
-                            .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
-                            .padding(1.dp)
+                            .size(12.dp)
+                            .align(Alignment.BottomEnd) // <--- Căn phải dưới
                     )
                 }
             }
@@ -284,7 +360,7 @@ fun WifiDetailDialog(wifi: SimpleScanResult, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         },
         icon = {
@@ -292,7 +368,7 @@ fun WifiDetailDialog(wifi: SimpleScanResult, onDismiss: () -> Unit) {
         },
         title = {
             Text(
-                text = wifi.ssid.ifBlank { "Wi-Fi Detail" },
+                text = wifi.ssid.ifBlank { stringResource(R.string.wifi_detail) },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -301,9 +377,13 @@ fun WifiDetailDialog(wifi: SimpleScanResult, onDismiss: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DetailRow("SSID", wifi.ssid.ifBlank { "<Hidden>" })
                 DetailRow("BSSID (MAC)", wifi.bssid)
-                DetailRow("Signal strength (RSSI)", "${wifi.level} dBm")
-                DetailRow("Frequency", "${wifi.frequency} MHz")
-                DetailRow("Security (Caps)", wifi.capabilities)
+                DetailRow(stringResource(R.string.standard), wifi.standardLabel.ifEmpty { "Unknown" }) // Mới
+                DetailRow(stringResource(R.string.frequency), "${wifi.frequency} MHz ("+ stringResource(R.string.channel_width) + ": ${wifi.channelWidth} MHz)") // Mới
+                DetailRow(stringResource(R.string.range), wifi.freqRangeLabel) // Mới (5490 - 5570 MHz)
+                DetailRow(stringResource(R.string.center_freq), "${wifi.centerFreq} MHz") // Mới
+                DetailRow(stringResource(R.string.rssi), "${wifi.level} dBm")
+//                DetailRow(stringResource(R.string.frequency), "${wifi.frequency} MHz")
+                DetailRow(stringResource(R.string.security), wifi.capabilities)
             }
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -342,7 +422,7 @@ fun getSignalIcon(rssi: Int): ImageVector {
 fun getSignalColor(rssi: Int): Color {
     return when {
         rssi > -50 -> Color(0xFF00C853) // Xanh lá đậm (Rất tốt)
-        rssi > -60 -> Color(0xFF00C853)  // Màu chính của theme (Tốt)
+        rssi > -60 -> Color(0xFF00C853)  // Xanh lá đậm (Tốt)
         rssi > -80 -> Color(0xFFFFAB00) // Vàng cam (Trung bình)
         else -> MaterialTheme.colorScheme.error // Đỏ (Yếu)
     }

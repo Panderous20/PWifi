@@ -1,5 +1,10 @@
 package com.example.pwifi.ui.screen
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.wifi.WifiManager
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -50,8 +55,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
@@ -63,6 +70,7 @@ import com.example.pwifi.R
 import com.example.pwifi.data.model.SpeedTestUiState
 import com.example.pwifi.ui.component.PWifiScaffold
 import com.example.pwifi.ui.theme.PWifiTheme
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlin.math.floor
 
 @Composable
@@ -72,14 +80,26 @@ fun SpeedTestScreen(
     // State này sẽ update liên tục
     val state by viewModel.uiState.collectAsState()
     val geminiPromptTemplate = stringResource(R.string.prompt_gemini)
-
+    val context = LocalContext.current
+    val wifiErrorMsg = stringResource(R.string.wifi_fail)
     PWifiScaffold(
-        title = "SpeedTest"
+        title = stringResource(R.string.speed_test)
     ) { innerPadding ->
         SpeedTestDetailScreen(
             paddingValues = innerPadding,
             state = state,
-            onClick = { viewModel.startTest(geminiPromptTemplate) })
+            onClick = {
+                val errorMsg = checkWifiCondition(context)
+
+                if (errorMsg == null) {
+                    // Không có lỗi -> Bắt đầu đo
+                    viewModel.startTest(geminiPromptTemplate)
+                } else {
+                    // Có lỗi -> Hiện Toast thông báo (Bật wifi hoặc Kết nối wifi)
+                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
     }
 }
 
@@ -193,7 +213,7 @@ fun GeminiResponseBox(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Network Analysis",
+                        text = stringResource(R.string.network_analysis),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -210,18 +230,19 @@ fun GeminiResponseBox(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Analyzing network quality...",
+                            text = stringResource(R.string.analyzing_network),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.secondary
                         )
                     }
                 } else {
                     // Hiển thị kết quả text
-                    Text(
-                        text = response ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        lineHeight = 20.sp
+                    MarkdownText(
+                        markdown = response ?: "",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            lineHeight = 20.sp
+                        ),
                     )
                 }
             }
@@ -250,24 +271,25 @@ fun SpeedIndicator(
 
 @Composable
 fun CircularSpeedIndicator(value: Float, angle: Float, color: Color) {
+    val lineColor = MaterialTheme.colorScheme.onSurface
     Canvas(
         modifier = Modifier
             .fillMaxSize(0.9f)
             .padding(32.dp)
     ) {
-        drawLines(value, angle)
+        drawLines(value, angle, lineColor)
         drawArcs(value, angle, color)
     }
 }
 
-fun DrawScope.drawLines(progress: Float, angleSize: Float, lines: Int = 41) {
+fun DrawScope.drawLines(progress: Float, angleSize: Float, lineColor: Color, lines: Int = 41) {
     val oneRotation = angleSize / lines
     val startValue = floor(progress * lines).toInt()
 
     for (i in startValue until lines) {
         rotate(i * oneRotation + (180 - angleSize) / 2) {
             drawLine(
-                color = Color.Black.copy(alpha = 0.3f),
+                color = lineColor,
                 start = Offset(x = if (i % 5 == 0) 80f else 30f, y = size.height / 2),
                 end = Offset(0f, size.height / 2),
                 8f,
@@ -384,7 +406,7 @@ fun StartButton(
         shape = RoundedCornerShape(24.dp),
         border = BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.onSurface)
     ) {
-        Text(text = if (isEnabled) "START" else "TESTING...")
+        Text(text = if (isEnabled) stringResource(R.string.start_button) else stringResource(R.string.testing_state))
     }
 }
 
@@ -392,7 +414,7 @@ fun StartButton(
 @Composable
 fun GeminiResponse(
     isEnabled: Boolean = false,
-    response: String? = "Alalala"
+    response: String? = ""
 ) {
     if(isEnabled)
     {
@@ -421,6 +443,20 @@ fun VerticalDivider() {
             .width(1.dp)
             .background(Color(0xFF414D66))
     )
+}
+
+fun checkWifiCondition(context: Context): String? {
+    val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val activeNetwork = connectivityManager.activeNetwork
+    val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+
+    val isConnectedToWifi = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+
+    if (!wifiManager.isWifiEnabled || !isConnectedToWifi) {
+        return context.getString(R.string.wifi_fail) // "Vui lòng bật Wi-Fi"
+    }
+    return null
 }
 
 @Preview(showBackground = true, device = Devices.PIXEL)

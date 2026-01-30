@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PWifi</string>
+    <string name="app_description">Ứng dụng Giám sát Wifi PTIT</string>
+
+    <string name="speed_test">Kiểm Tra Tốc Độ</string>
+    <string name="wifi_list">Danh sách Wi-Fi</string>
+
+    <string name="download_upcase">TẢI XUỐNG</string>
+    <string name="upload_upcase">TẢI LÊN</string>
+
+    <string name="error">Lỗi</string>
+    <string name="wifi_info_error">Chưa kết nối Wi-Fi hoặc quyền Vị trí bị từ chối.</string>
+    <string name="start_button">Bắt Đầu</string>
+    <string name="testing_state">Đang Đo...</string>
+    <string name="cancel">Đóng</string>
+    <string name="choose_language">Chọn Ngôn Ngữ</string>
+    <string name="version">Phiên bản %s</string>
+    <string name="about_app">Về App</string>
+    <string name="language">Ngôn Ngữ</string>
+    <string name="general_setting">Cài Đặt Chung</string>
+    <string name="setting_title">Cài Đặt</string>
+
+    <string name="rssi_title">Cường độ tín hiệu Wi-Fi thời gian thực (RSSI)</string>
+    <string name="rssi_chart_label">Cường độ tín hiệu (dBm)</string>
+
+    <string name="wifi_fail">Vui lòng kết nối Wifi để tiếp tục</string>
+    <string name="location_fail">Vui lòng cấp quyền để tiếp tục quét Wi-Fi.</string>
+    <string name="prompt_gemini">
+    <![CDATA[
+    You are a Senior Telecommunications Engineer. Analyze the network connection from Vietnam to a server in Tokyo, Japan.
+
+Input Data:
+Ping: %1$d ms
+Jitter: %2$d ms
+Download: %3$.2f Mbps
+Upload: %4$.2f Mbps
+RSSI: %5$s
+
+### 1. CORE ANALYSIS LOGIC:
+* **Context:** International Route (VN -> JP). Ping (80-180ms) is INHERENT LATENCY due to physics. Do not flag high ping as an error unless it exceeds 200ms.
+* **Signal Strength (RSSI) Scale:**
+    * **Excellent/Good:** > -65 dBm.
+    * **Fair:** -65 dBm to -75 dBm.
+    * **Poor:** < -75 dBm (This is the primary cause of instability).
+* **Assessment Scale:**
+    * Combined Score (Speed + Stability + Signal) determines the rating.
+    * Avoid harsh words like "Kém/Tệ". Use "Cần cải thiện" or "Chưa ổn định".
+
+### 2. DIAGNOSIS MATRIX (The "Brain" of the analysis):
+* **CASE 1: WEAK SIGNAL (RSSI < -75 dBm)**
+    * *Root Cause:* Physical distance or obstacles (walls, doors).
+    * *Key Indicator:* Low RSSI regardless of Jitter/Speed.
+* **CASE 2: INTERFERENCE (RSSI > -65 dBm BUT Jitter > 40ms)**
+    * *Root Cause:* Channel congestion (Co-channel interference) or noisy environment.
+    * *Key Indicator:* Signal is Strong, but Stability (Jitter) is bad.
+* **CASE 3: SATURATION (RSSI > -65 dBm, Jitter Low, BUT Speed < 10Mbps)**
+    * *Root Cause:* Bandwidth limit, ISP throttling, or background downloads.
+* **CASE 4: OPTIMAL:** High Speed, Low Jitter, Good RSSI.
+
+### 3. RECOMMENDATION ENGINE (Vary sentence structures):
+Generate 3 specific tips based on the DIAGNOSIS MATRIX above.
+
+* **If CASE 1 (Weak Signal):** Focus on position.
+    * Suggest moving closer to the AP.
+    * Suggest checking for thick walls/metal objects blocking the signal.
+    * Suggest using a Wi-Fi Repeater or Mesh system.
+* **If CASE 2 (Interference):** Focus on configuration.
+    * Strongly suggest switching Wi-Fi channels (1, 6, 11 for 2.4GHz).
+    * Suggest switching to 5GHz band if available to avoid noise.
+    * Suggest restarting the router to trigger auto-channel selection.
+* **If CASE 3 (Saturation):** Focus on usage.
+    * Check for background downloads on other devices.
+    * Restart router to clear cache/RAM.
+* **If CASE 4 (Optimal):** Maintenance tips.
+    * Keep firmware updated.
+
+### 4. TONE GUIDELINES (Professional & Objective):
+* Describe the *correlation* between Signal and Speed.
+    * *Example:* "Cường độ tín hiệu thấp (%5s) là nguyên nhân chính dẫn đến suy hao băng thông."
+    * *Example:* "Tín hiệu rất tốt (%5$s) nhưng độ trễ biến thiên cao cho thấy dấu hiệu can nhiễu từ các mạng lân cận."
+
+### REQUIRED OUTPUT (IN VIETNAMESE):
+Generate the report strictly following this Markdown format.
+
+Server: Tokyo, Japan (Quốc tế)
+- **Đánh giá chung**: (Tốt / Khá / Trung bình / Cần cải thiện)
+- **Phân tích kỹ thuật**: (Write a balanced paragraph explaining the correlation between RSSI, Jitter, and Speed based on the Diagnosis Matrix).
+- **Khả năng đáp ứng**: (List suitable activities. Be honest about lag/buffering if metrics are poor).
+- **Lời khuyên khắc phục**:
+    1. (Generate a tip based on the specific Root Cause detected)
+    2. (Generate a tip based on the specific Root Cause detected)
+    3. (Generate a generic maintenance tip)
+    ]]>
+</string>
+    <string name="wifi_info_title">Thông Tin Wi-Fi</string>
+    <string name="wifi_scan_title">Quét Wi-Fi</string>
+    <string name="connected_wifi">Wi-Fi Đang Kết Nối</string>
+    <string name="frequency">Tần số</string>
+    <string name="security">Bảo mật</string>
+    <string name="stop_monitor">Tạm Dừng Đo</string>
+    <string name="start_monitor">Bắt Đầu Đo</string>
+    <string name="save_result">Lưu Kết Quả</string>
+    <string name="rssi_chart_y_label">Cường đọ tín hiệu (dBm)</string>
+    <string name="rssi_chart_x_label">Thời Gian Đo (Giây)</string>
+    <string name="rssi_chart_legend">Cường Độ Tín Hiệu Mỗi Giây (dBm/s)</string>
+    <string name="refresh">Làm Mới</string>
+    <string name="save_success">Đã lưu tại: %1$s</string>
+    <string name="save_error">Lưu thất bại.</string>
+    <string name="available_networks">Mạng khả dụng</string>
+    <string name="wifi_detail">Chi tiết Wi-Fi </string>
+    <string name="rssi">Cường độ tín hiệu (RSSI)</string>
+    <string name="dark_mode">Chế độ tối</string>
+    <string name="dark_mode_subtitle">Nhấn để thay đổi chế độ hiển thị</string>
+    <string name="standard">Chuẩn</string>
+    <string name="range">Dải tần</string>
+    <string name="center_freq">Tần số trung tâm</string>
+    <string name="channel_width">Độ rộng kênh</string>
+    <string name="channel_graph">Biểu Đồ Kênh</string>
+    <string name="channel_graph_error">Không tìm thấy mạng khả dụng.\n Vui lòng bật Wifi và Vị trí</string>
+    <string name="analyzing_network">Đang phân tích...</string>
+    <string name="network_analysis">Đánh giá chất lượng mạng</string>
+    <string name="link_speed">Tốc độ liên kết</string>
+</resources>

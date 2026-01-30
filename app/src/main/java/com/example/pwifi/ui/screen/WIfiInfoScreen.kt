@@ -1,5 +1,8 @@
 package com.example.pwifi.ui.screen
 
+import android.os.Build
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,14 +17,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.CompareArrows
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.rounded.CompareArrows
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.PermIdentity
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material.icons.rounded.SignalWifi4Bar
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.Waves
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -43,12 +51,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pwifi.R
+import com.example.pwifi.data.model.SaveMessageEvent
 import com.example.pwifi.data.model.SimpleScanResult
 import com.example.pwifi.ui.chart.rememberMarker
 import com.example.pwifi.ui.component.PWifiScaffold
@@ -78,13 +88,16 @@ import com.patrykandpatrick.vico.core.cartesian.marker.LineCartesianLayerMarkerT
 import com.patrykandpatrick.vico.core.common.LegendItem
 import com.patrykandpatrick.vico.core.common.shader.ShaderProvider
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import kotlinx.coroutines.flow.collectLatest
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WifiInfoScreen(
     paddingValues: PaddingValues = PaddingValues(),
     viewModel: WifiInfoViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val currentWifi by viewModel.currentWifi.collectAsState()
     val stats by viewModel.sessionStats.collectAsState()
     val isMonitoring = viewModel.isMonitoring
@@ -92,8 +105,23 @@ fun WifiInfoScreen(
 
     val refreshState = rememberPullToRefreshState()
 
+    LaunchedEffect(Unit) {
+        viewModel.saveEvent.collectLatest { event ->
+
+            val message = when (event) {
+                is SaveMessageEvent.Success -> {
+                    context.getString(R.string.save_success, event.filePath)
+                }
+                is SaveMessageEvent.Error -> {
+                    context.getString(R.string.save_error)
+                }
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
     PWifiScaffold(
-        title = "Wi-Fi Info"
+        title = stringResource(R.string.wifi_info_title)
     )
     { innerPadding ->
         PullToRefreshBox(
@@ -130,7 +158,7 @@ fun WifiInfoScreen(
                 ControlButtons(
                     isMonitoring = isMonitoring,
                     onToggleMonitor = { viewModel.toggleMonitoring() },
-                    onRefreshInfo = { viewModel.getWifiInfo() }
+                    onSaveClick = { viewModel.saveResult() }
                 )
             }
         }
@@ -159,7 +187,7 @@ fun WifiDetailCard(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Connected Network",
+                    text = stringResource(R.string.connected_wifi),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -172,10 +200,46 @@ fun WifiDetailCard(
             )
 
             if (currentWifi != null) {
+                // Thông tin cơ bản
                 InfoRow(icon = Icons.Rounded.PermIdentity, label = "SSID", value = currentWifi.ssid)
                 InfoRow(icon = Icons.Rounded.Fingerprint, label = "BSSID", value = currentWifi.bssid)
-                InfoRow(icon = Icons.Rounded.Speed, label = "Freq", value = "${currentWifi.frequency} MHz")
-                InfoRow(icon = Icons.Rounded.Security, label = "Security", value = currentWifi.capabilities)
+
+                // Standard (Wifi 4, 5, 6...)
+                // Chỉ hiện nếu parse được (khác rỗng)
+                if (currentWifi.standardLabel.isNotEmpty()) {
+                    InfoRow(
+                        icon = Icons.Rounded.SignalWifi4Bar,
+                        label = stringResource(R.string.standard),
+                        value = currentWifi.standardLabel
+                    )
+                }
+
+                //  Frequency + Bandwidth
+                InfoRow(
+                    icon = Icons.Rounded.Waves,
+                    label = stringResource(R.string.frequency),
+                    value = "${currentWifi.frequency} MHz (Width: ${currentWifi.channelWidth} MHz)"
+                )
+
+                // Real Range (Dải tần thực tế)
+                if (currentWifi.freqRangeLabel.isNotEmpty()) {
+                    InfoRow(
+                        icon = Icons.Rounded.CompareArrows,
+                        label = stringResource(R.string.range),
+                        value = currentWifi.freqRangeLabel
+                    )
+                }
+
+                // 5. Security
+                InfoRow(icon = Icons.Rounded.Security, label = stringResource(R.string.security), value = currentWifi.capabilities)
+                // Link speed chỉ có khi > 0
+                if (currentWifi.linkSpeed > 0) {
+                    InfoRow(
+                        icon = Icons.Rounded.Speed,
+                        label = stringResource(R.string.link_speed),
+                        value = "${currentWifi.linkSpeed} Mbps"
+                    )
+                }
             } else {
                 Text(
                     text = stringResource(R.string.wifi_info_error),
@@ -196,7 +260,7 @@ fun WifiDetailCard(
             ) {
                 Icon(imageVector = Icons.Rounded.Refresh, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Refresh")
+                Text(stringResource(R.string.refresh))
             }
         }
     }
@@ -207,8 +271,7 @@ fun InfoRow(icon: ImageVector, label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 4.dp)
     ) {
         Icon(
             imageVector = icon,
@@ -238,6 +301,7 @@ fun RssiChartCard(
     modelProducer: CartesianChartModelProducer
 ) {
     //remember de tranh tao lai khi recompose
+    val legendLabel = stringResource(R.string.rssi_chart_legend)
     val RangeProvider = remember {
         CartesianLayerRangeProvider.fixed(minY = 0.0, maxY = 100.0)
     }
@@ -261,6 +325,10 @@ fun RssiChartCard(
         color = MaterialTheme.colorScheme.onSurface,
         textSize = 14.sp,
     )
+    val axisValueComponent = rememberTextComponent(
+        color = MaterialTheme.colorScheme.onSurface,
+        textSize = 12.sp,
+    )
     val lineColor = Color(0xFF23AF92)
     val legendIconComponent = rememberShapeComponent(
         fill = fill(lineColor),
@@ -273,7 +341,7 @@ fun RssiChartCard(
         LegendItem(
             icon = legendIconComponent,
             labelComponent = legendLabelComponent,
-            label = "Signal Strength (dBm)"
+            label = legendLabel
         )
     }
 
@@ -293,12 +361,14 @@ fun RssiChartCard(
                 rangeProvider = RangeProvider
             ),
             startAxis = VerticalAxis.rememberStart(
-                title = "Signal Strength (dBm)",
+                title = stringResource(R.string.rssi_chart_y_label),
                 titleComponent = axisTitleComponent,
-                valueFormatter = formatter
+                label = axisValueComponent,
+                valueFormatter = formatter,
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
-                title = "Time (second)",
+                title = stringResource(R.string.rssi_chart_x_label),
+                label = axisValueComponent,
                 titleComponent = axisTitleComponent
             ),
             marker = rememberMarker(valueFormatter = markerFormatter),
@@ -383,7 +453,7 @@ fun StatItem(title: String, value: String, color: Color, modifier: Modifier = Mo
 fun ControlButtons(
     isMonitoring: Boolean,
     onToggleMonitor: () -> Unit,
-    onRefreshInfo: () -> Unit
+    onSaveClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -391,12 +461,12 @@ fun ControlButtons(
     ) {
         // Button Refresh Info
         OutlinedButton(
-            onClick = onRefreshInfo,
+            onClick = onSaveClick,
             modifier = Modifier.weight(1f)
         ) {
             Icon(imageVector = Icons.Filled.Save, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Save Result")
+            Text(stringResource(R.string.save_result))
         }
 
         // Button Start/Stop
@@ -413,7 +483,7 @@ fun ControlButtons(
                 contentDescription = null
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (isMonitoring) "Stop Monitor" else "Start Monitor")
+            Text(if (isMonitoring) stringResource(R.string.stop_monitor) else stringResource(R.string.start_monitor))
         }
     }
 }
